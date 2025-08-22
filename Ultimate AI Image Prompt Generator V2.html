@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate AI Image Prompt Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b1020; --card: #121a33; --ink: #e9ecf8; --muted: #9aa3c7;
+            --accent: #6aa6ff; --accent-2: #8ff0d1; --danger: #ff6b6b; --border: #243051;
+            --accent-random: #a879ff;
+        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            margin: 0; 
+            font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+            background: radial-gradient(1200px 800px at 80% -10%, #1d2a52 0%, var(--bg) 40%);
+            color: var(--ink);
+        }
+        .container { max-width: 1600px; margin: 0 auto; padding: 24px; }
+        .header { text-align: center; margin-bottom: 32px; }
+        .title { font-size: clamp(24px, 2.4vw, 32px); font-weight: 800; }
+        .subtitle { color: var(--muted); margin-top: 8px; font-size: 16px; }
+        .main-grid { display: grid; gap: 24px; }
+        @media (min-width: 1200px){ .main-grid { grid-template-columns: 1fr 1fr 1fr; } }
+        .card {
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+            border: 1px solid var(--border); border-radius: 16px; padding: 24px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; flex-direction: column;
+        }
+        .section-title { font-weight: 700; margin: 0 0 16px; opacity: 0.95; font-size: 18px; }
+        label { display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 500; color: var(--muted); margin-bottom: 8px; }
+        input[type="text"], textarea, select {
+            width: 100%; background: #0e1530; color: var(--ink);
+            border: 1px solid var(--border); border-radius: 10px; padding: 12px;
+            outline: none; font-size: 14px; transition: all 0.2s;
+        }
+        input[type="text"]:focus, textarea:focus, select:focus {
+            border-color: var(--accent); box-shadow: 0 0 0 3px rgba(106, 166, 255, 0.2);
+        }
+        .custom-input { margin-top: 8px; }
+        textarea { resize: vertical; }
+        .form-group { margin-bottom: 16px; }
+        .btns { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+        button {
+            border: 1px solid var(--border); background: #0f1936; color: var(--ink);
+            border-radius: 12px; padding: 10px 16px; cursor: pointer; font-weight: 600;
+            transition: all .1s ease-in-out; display: inline-flex; align-items: center; gap: 8px;
+        }
+        button:hover { transform: translateY(-2px); border-color: #39508f; }
+        button:active { transform: translateY(0); }
+        .primary { background: linear-gradient(90deg, #528dff, var(--accent)); border-color: transparent; }
+        .danger { background: var(--danger); border-color: transparent; }
+        .ghost { background: transparent; }
+        .randomize-btn { background: linear-gradient(90deg, #c084fc, var(--accent-random)); border-color: transparent; }
+        .output-card { flex-grow: 1; display: flex; flex-direction: column; }
+        .output { 
+            white-space: pre-wrap; word-wrap: break-word; background: rgba(0,0,0,0.2);
+            padding: 16px; border-radius: 10px; border: 1px solid var(--border);
+            color: var(--muted); font-size: 13px; line-height: 1.6; min-height: 150px;
+            flex-grow: 1;
+        }
+        .lang-switcher { display: flex; justify-content: center; gap: 10px; margin-bottom: 32px; }
+        .lang-btn { background: transparent; border: 1px solid var(--border); }
+        .lang-btn.active { background: var(--card); color: var(--accent); border-color: var(--accent); }
+        .copy-feedback {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background-color: var(--accent-2); color: #0b1020; padding: 10px 20px;
+            border-radius: 8px; font-weight: 600; box-shadow: 0 4px 20px rgba(143, 240, 209, 0.3);
+            opacity: 0; transition: all 0.3s ease; pointer-events: none; z-index: 100;
+        }
+        .copy-feedback.show { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+        .negative-prompt-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px;
+        }
+        .negative-prompt-grid label {
+            display: flex; align-items: center; background: #0e1530; border: 1px solid var(--border);
+            border-radius: 8px; padding: 8px; font-size: 12px; cursor: pointer; transition: all 0.2s;
+            justify-content: flex-start;
+        }
+        .negative-prompt-grid label:hover { border-color: var(--accent); }
+        .negative-prompt-grid input[type="checkbox"] { margin-right: 8px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="title" data-translate="appTitle">Ultimate AI Image Prompt Generator</h1>
+            <p class="subtitle" data-translate="appSubtitle">Buat, simpan, dan kelola prompt gambar yang konsisten dengan mudah.</p>
+        </div>
+
+        <div class="lang-switcher">
+            <button id="lang-id" class="lang-btn active">Indonesia</button>
+            <button id="lang-en" class="lang-btn">English</button>
+        </div>
+
+        <div class="main-grid">
+            <!-- Kolom 1: Subjek & Scene -->
+            <div class="card">
+                <h2 class="section-title" data-translate="mainInputsTitle">1. Subjek & Adegan</h2>
+                <div class="form-group">
+                    <label for="mainSubject" data-translate="mainSubjectLabel">Subjek Utama</label>
+                    <input type="text" id="mainSubject" placeholder="Contoh: Seorang ksatria cybernetic" data-translate="mainSubjectPlaceholder">
+                </div>
+                <div class="form-group">
+                    <label for="description" data-translate="descriptionLabel">Deskripsi Detail Subjek</label>
+                    <textarea id="description" rows="3" placeholder="Pakaian, ekspresi, fitur..." data-translate="descriptionPlaceholder"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="actionPose" data-translate="actionPoseLabel">Aksi / Pose</label>
+                    <select id="actionPose" class="form-control with-custom">
+                        <option value="" data-translate="actionPoseOptionDefault">Pilih aksi...</option>
+                        <option value="standing" data-translate="actionPoseOptionStanding">Berdiri</option>
+                        <option value="sitting" data-translate="actionPoseOptionSitting">Duduk</option>
+                        <option value="running" data-translate="actionPoseOptionRunning">Berlari</option>
+                        <option value="fighting stance" data-translate="actionPoseOptionFighting">Pose Bertarung</option>
+                        <option value="looking at viewer" data-translate="actionPoseOptionLooking">Melihat ke penonton</option>
+                        <option value="custom" data-translate="customOption">Kustom...</option>
+                    </select>
+                    <input type="text" id="actionPose-custom" class="custom-input" style="display: none;">
+                </div>
+                <div class="form-group">
+                    <label for="locationBackground" data-translate="locationBackgroundLabel">Lokasi / Latar</label>
+                    <select id="locationBackground" class="form-control with-custom">
+                        <option value="" data-translate="locationBackgroundOptionDefault">Pilih lokasi...</option>
+                        <option value="in a futuristic city" data-translate="locationBackgroundOptionCity">Kota Futuristik</option>
+                        <option value="in an enchanted forest" data-translate="locationBackgroundOptionForest">Hutan Ajaib</option>
+                        <option value="inside a spaceship" data-translate="locationBackgroundOptionSpaceship">Dalam Pesawat Luar Angkasa</option>
+                        <option value="custom" data-translate="customOption">Kustom...</option>
+                    </select>
+                     <input type="text" id="locationBackground-custom" class="custom-input" style="display: none;">
+                </div>
+                <div class="form-group">
+                    <label for="eraContext" data-translate="eraContextLabel">Era & Konteks Budaya</label>
+                    <select id="eraContext" class="form-control with-custom">
+                        <option value="" data-translate="eraContextOptionDefault">Pilih era...</option>
+                        <option value="Prehistoric" data-translate="eraContextOptionPrehistoric">Prasejarah</option>
+                        <option value="Ancient Egypt" data-translate="eraContextOptionEgypt">Mesir Kuno</option>
+                        <option value="Greek-Roman" data-translate="eraContextOptionRoman">Yunani-Romawi</option>
+                        <option value="Medieval" data-translate="eraContextOptionMedieval">Abad Pertengahan</option>
+                        <option value="Renaissance" data-translate="eraContextOptionRenaissance">Renaissance</option>
+                        <option value="Victorian" data-translate="eraContextOptionVictorian">Victoria</option>
+                        <option value="1920s Art Deco" data-translate="eraContextOption1920s">1920-an Art Deco</option>
+                        <option value="1980s Retro" data-translate="eraContextOption1980s">1980-an Retro</option>
+                        <option value="Cyberpunk Future" data-translate="eraContextOptionCyberpunk">Masa Depan Cyberpunk</option>
+                        <option value="Post-apocalyptic" data-translate="eraContextOptionApocalyptic">Pasca-kiamat</option>
+                        <option value="Traditional Japanese" data-translate="eraContextOptionJapanese">Jepang Tradisional</option>
+                        <option value="custom" data-translate="customOption">Kustom...</option>
+                    </select>
+                    <input type="text" id="eraContext-custom" class="custom-input" style="display: none;">
+                </div>
+                 <div class="form-group">
+                    <label data-translate="negativePromptLabel">Prompt Negatif</label>
+                    <div id="negative-prompt-container" class="negative-prompt-grid">
+                        <!-- Checkboxes will be generated by JS -->
+                    </div>
+                    <textarea id="negativePrompt-custom" rows="2" data-translate="negativePromptPlaceholder" placeholder="Tambahkan negatif prompt kustom..." style="margin-top: 10px;"></textarea>
+                </div>
+            </div>
+
+            <!-- Kolom 2: Opsi Styling -->
+            <div class="card">
+                <h2 class="section-title" data-translate="stylingOptionsTitle">2. Gaya & Visual</h2>
+                <div class="form-group">
+                    <label for="style" data-translate="styleLabel">Gaya Visual</label>
+                    <select id="style" class="form-control with-custom">
+                        <option value="" data-translate="styleOptionDefault">Pilih gaya...</option>
+                        <option value="Photorealistic" data-translate="styleOptionPhotorealistic">Fotorealistis</option>
+                        <option value="Hyperrealistic" data-translate="styleOptionHyperrealistic">Hyperrealistic</option>
+                        <option value="Surrealism" data-translate="styleOptionSurrealism">Surealisme</option>
+                        <option value="Cartoon" data-translate="styleOptionCartoon">Kartun</option>
+                        <option value="Anime" data-translate="styleOptionAnime">Anime</option>
+                        <option value="3D Render" data-translate="styleOption3DRender">3D Render</option>
+                        <option value="Pixar Style" data-translate="styleOptionPixar">Gaya Pixar</option>
+                        <option value="Pixel Art" data-translate="styleOptionPixelArt">Pixel Art</option>
+                        <option value="Minimalism" data-translate="styleOptionMinimalism">Minimalisme</option>
+                        <option value="Line Art" data-translate="styleOptionLineArt">Line Art</option>
+                        <option value="Watercolor" data-translate="styleOptionWatercolor">Cat Air</option>
+                        <option value="Oil Painting" data-translate="styleOptionOilPainting">Lukisan Cat Minyak</option>
+                        <option value="Digital Painting" data-translate="styleOptionDigitalPainting">Lukisan Digital</option>
+                        <option value="Cyberpunk" data-translate="styleOptionCyberpunkStyle">Cyberpunk</option>
+                        <option value="Fantasy Art" data-translate="styleOptionFantasyArt">Seni Fantasi</option>
+                        <option value="custom" data-translate="customOption">Kustom...</option>
+                    </select>
+                     <input type="text" id="style-custom" class="custom-input" style="display: none;">
+                </div>
+                <div class="form-group">
+                    <label for="moodAtmosphere" data-translate="moodAtmosphereLabel">Mood / Atmosfer</label>
+                    <select id="moodAtmosphere" class="form-control with-custom">
+                        <option value="" data-translate="moodAtmosphereOptionDefault">Pilih mood...</option>
+                        <option value="Calm" data-translate="moodAtmosphereOptionCalm">Tenang</option>
+                        <option value="Epic" data-translate="moodAtmosphereOptionEpic">Epik</option>
+                        <option value="Dramatic" data-translate="moodAtmosphereOptionDramatic">Dramatis</option>
+                        <option value="Mysterious" data-translate="moodAtmosphereOptionMysterious">Misterius</option>
+                        <option value="Horror" data-translate="moodAtmosphereOptionHorror">Horor</option>
+                        <option value="Romantic" data-translate="moodAtmosphereOptionRomantic">Romantis</option>
+                        <option value="Joyful" data-translate="moodAtmosphereOptionJoyful">Ceria</option>
+                        <option value="Dreamy" data-translate="moodAtmosphereOptionDreamy">Seperti Mimpi</option>
+                        <option value="Magical" data-translate="moodAtmosphereOptionMagical">Magis</option>
+                        <option value="custom" data-translate="customOption">Kustom...</option>
+                    </select>
+                     <input type="text" id="moodAtmosphere-custom" class="custom-input" style="display: none;">
+                </div>
+                <div class="form-group">
+                    <label for="colorTone" data-translate="colorToneLabel">Warna & Nada</label>
+                    <select id="colorTone" class="form-control with-custom">
+                        <option value="" data-translate="colorToneOptionDefault">Pilih warna...</option>
+                        <option value="Vibrant Colors" data-translate="colorToneOptionVibrant">Warna Cerah</option>
+                        <option value="Pastel Colors" data-translate="colorToneOptionPastel">Warna Pastel</option>
+                        <option value="Monochrome" data-translate="colorToneOptionMonochrome">Monokrom</option>
+                        <option value="Black & White" data-translate="colorToneOptionBW">Hitam & Putih</option>
+                        <option value="Cinematic Teal & Orange" data-translate="colorToneOptionTealOrange">Teal & Oranye Sinematik</option>
+                        <option value="Neon Colors" data-translate="colorToneOptionNeon">Warna Neon</option>
+                        <option value="Warm Tone" data-translate="colorToneOptionWarm">Nada Hangat</option>
+                        <option value="Cool Tone" data-translate="colorToneOptionCool">Nada Dingin</option>
+                        <option value="High Contrast" data-translate="colorToneOptionHighContrast">Kontras Tinggi</option>
+                        <option value="custom" data-translate="customOption">Kustom...</option>
+                    </select>
+                    <input type="text" id="colorTone-custom" class="custom-input" style="display: none;">
+                </div>
+                <div class="form-group">
+                    <label for="materialTexture" data-translate="materialTextureLabel">Material & Tekstur</label>
+                    <select id="materialTexture" class="form-control with-custom">
+                        <option value="" data-translate="materialTextureOptionDefault">Pilih material...</option>
+                        <option value="Metallic" data-translate="materialTextureOptionMetallic">Logam</option>
+                        <option value="Gold" data-translate="materialTextureOptionGold">Emas</option>
+                        <option value="Glass" data-translate="materialTextureOptionGlass">Kaca</option>
+                        <option value="Crystal" data-translate="materialTextureOptionCrystal">Kristal</option>
+                        <option value="Wood" data-translate="materialTextureOptionWood">Kayu</option>
+                        <option value="Leather" data-translate="materialTextureOptionLeather">Kulit</option>
+                        <option value="Water" data-translate="materialTextureOptionWater">Air</option>
+                        <option value="Smoke" data-translate="materialTextureOptionSmoke">Asap</option>
+                        <option value="Fire" data-translate="materialTextureOptionFire">Api</option>
+                        <option value="custom" data-translate="customOption">Kustom...</option>
+                    </select>
+                    <input type="text" id="materialTexture-custom" class="custom-input" style="display: none;">
+                </div>
+                <div class="form-group">
+                    <label for="artistInspiration" data-translate="artistLabel">Inspirasi Seniman</label>
+                    <input type="text" id="artistInspiration" placeholder="Contoh: Greg Rutkowski, Artgerm" data-translate="artistPlaceholder">
+                </div>
+            </div>
+
+            <!-- Kolom 3: Teknis & Output -->
+            <div class="card">
+                <h2 class="section-title" data-translate="technicalTitle">3. Teknis & Preset</h2>
+                <div class="form-group">
+                    <label for="composition" data-translate="compositionLabel">Sudut Kamera</label>
+                    <select id="composition" class="form-control with-custom">
+                        <option value="" data-translate="compositionOptionDefault">Pilih sudut...</option>
+                        <option value="Macro" data-translate="compositionOptionMacro">Makro</option>
+                        <option value="Close-up" data-translate="compositionOptionCloseup">Close-up</option>
+                        <option value="Medium Shot" data-translate="compositionOptionMedium">Medium Shot</option>
+                        <option value="Wide Shot" data-translate="compositionOptionWide">Wide Shot</option>
+                        <option value="Low Angle" data-translate="compositionOptionLow">Sudut Rendah</option>
+                        <option value="High Angle" data-translate="compositionOptionHigh">Sudut Tinggi</option>
+                        <option value="Bird’s Eye View" data-translate="compositionOptionBirdsEye">Pandangan Mata Burung</option>
+                        <option value="Dutch Angle" data-translate="compositionOptionDutch">Dutch Angle</option>
+                        <option value="Portrait" data-translate="compositionOptionPortrait">Potret</option>
+                        <option value="Landscape" data-translate="compositionOptionLandscape">Lanskap</option>
+                        <option value="custom" data-translate="customOption">Kustom...</option>
+                    </select>
+                     <input type="text" id="composition-custom" class="custom-input" style="display: none;">
+                </div>
+                <div class="form-group">
+                    <label for="lighting" data-translate="lightingLabel">Pencahayaan</label>
+                    <select id="lighting" class="form-control with-custom">
+                        <option value="" data-translate="lightingOptionDefault">Pilih pencahayaan...</option>
+                        <option value="Natural Light" data-translate="lightingOptionNatural">Cahaya Alami</option>
+                        <option value="Golden Hour" data-translate="lightingOptionGolden">Golden Hour</option>
+                        <option value="Blue Hour" data-translate="lightingOptionBlue">Blue Hour</option>
+                        <option value="Neon Lighting" data-translate="lightingOptionNeon">Cahaya Neon</option>
+                        <option value="Rembrandt Lighting" data-translate="lightingOptionRembrandt">Pencahayaan Rembrandt</option>
+                        <option value="Backlighting" data-translate="lightingOptionBacklight">Backlighting</option>
+                        <option value="Rim Lighting" data-translate="lightingOptionRim">Rim Lighting</option>
+                        <option value="Volumetric Lighting" data-translate="lightingOptionVolumetric">Pencahayaan Volumetrik</option>
+                        <option value="custom" data-translate="customOption">Kustom...</option>
+                    </select>
+                     <input type="text" id="lighting-custom" class="custom-input" style="display: none;">
+                </div>
+                <div class="form-group">
+                    <label for="extraEffects" data-translate="extraEffectsLabel">Efek Tambahan</label>
+                    <select id="extraEffects" class="form-control with-custom">
+                        <option value="" data-translate="extraEffectsOptionDefault">Pilih efek...</option>
+                        <option value="Bokeh" data-translate="extraEffectsOptionBokeh">Bokeh</option>
+                        <option value="Motion Blur" data-translate="extraEffectsOptionMotionBlur">Motion Blur</option>
+                        <option value="Lens Flare" data-translate="extraEffectsOptionLensFlare">Lens Flare</option>
+                        <option value="Light Rays" data-translate="extraEffectsOptionLightRays">Sinar Cahaya</option>
+                        <option value="Fog" data-translate="extraEffectsOptionFog">Kabut</option>
+                        <option value="Rain" data-translate="extraEffectsOptionRain">Hujan</option>
+                        <option value="Sparkles" data-translate="extraEffectsOptionSparkles">Kilauan</option>
+                        <option value="Glitch Effect" data-translate="extraEffectsOptionGlitch">Efek Glitch</option>
+                        <option value="Film Grain" data-translate="extraEffectsOptionFilmGrain">Film Grain</option>
+                        <option value="custom" data-translate="customOption">Kustom...</option>
+                    </select>
+                    <input type="text" id="extraEffects-custom" class="custom-input" style="display: none;">
+                </div>
+                <div class="form-group">
+                    <label for="resolutionDetail" data-translate="resolutionDetailLabel">Resolusi & Detail</label>
+                    <select id="resolutionDetail" class="form-control with-custom">
+                        <option value="" data-translate="resolutionDetailOptionDefault">Pilih resolusi...</option>
+                        <option value="4K, highly detailed" data-translate="resolutionDetailOption4K">4K, Sangat Detail</option>
+                        <option value="8K, hyperrealistic, intricate details" data-translate="resolutionDetailOption8K">8K, Hyperrealistic</option>
+                        <option value="masterpiece, best quality" data-translate="resolutionDetailOptionMasterpiece">Masterpiece</option>
+                        <option value="trending on ArtStation" data-translate="resolutionDetailOptionArtstation">Trending di ArtStation</option>
+                         <option value="custom" data-translate="customOption">Kustom...</option>
+                    </select>
+                     <input type="text" id="resolutionDetail-custom" class="custom-input" style="display: none;">
+                </div>
+                <div class="form-group">
+                    <label for="aspectRatio" data-translate="aspectRatioLabel">Rasio Aspek</label>
+                    <select id="aspectRatio" class="form-control">
+                        <option value="1:1">1:1 (Square)</option>
+                        <option value="16:9">16:9 (Landscape)</option>
+                        <option value="9:16">9:16 (Portrait)</option>
+                    </select>
+                </div>
+                 <hr style="border-color: var(--border); margin: 24px 0;">
+                <div class="form-group">
+                    <label for="presetName" data-translate="presetNameLabel">Nama Preset</label>
+                    <input type="text" id="presetName" placeholder="Contoh: Ksatria Cyberpunk" data-translate="presetNamePlaceholder">
+                </div>
+                <div class="btns">
+                    <button id="savePresetBtn" class="primary" data-translate="savePresetButton">Simpan</button>
+                    <button id="resetBtn" class="ghost" data-translate="resetButton">Reset Form</button>
+                </div>
+                <div class="form-group" style="margin-top: 16px;">
+                    <label for="loadPresetSelect" data-translate="loadPresetLabel">Muat Preset</label>
+                    <select id="loadPresetSelect">
+                        <option value="" data-translate="loadPresetDefault">Pilih preset...</option>
+                    </select>
+                </div>
+                 <div class="btns">
+                    <button id="deletePresetBtn" class="danger ghost" data-translate="deletePresetButton">Hapus</button>
+                    <button id="importPresetsBtn" data-translate="importButton">Import</button>
+                    <button id="exportPresetsBtn" data-translate="exportButton">Export</button>
+                    <button id="randomizeBtn" class="randomize-btn" data-translate="randomizeButton">Acak Tema</button>
+                </div>
+                <input type="file" id="importFile" accept=".json" style="display: none;">
+            </div>
+        </div>
+        
+        <!-- Output Section -->
+        <div class="main-grid" style="margin-top: 24px; grid-template-columns: 1fr 1fr;">
+             <div class="card">
+                <h2 class="section-title" data-translate="textOutputTitle">Text Prompt</h2>
+                <textarea id="text-output" class="output" readonly rows="8"></textarea>
+                <div class="btns">
+                    <button class="copy-btn-main" data-output-id="text-output" data-translate="copyButton">Salin Teks Prompt</button>
+                </div>
+            </div>
+             <div class="card">
+                <h2 class="section-title" data-translate="jsonOutputTitle">JSON Output</h2>
+                <pre><code id="json-output" class="output mono"></code></pre>
+                 <div class="btns">
+                    <button class="copy-btn-main" data-output-id="json-output" data-translate="copyButtonJSON">Salin JSON</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="copy-feedback" class="copy-feedback"></div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Element Definitions ---
+        const formElements = {
+            mainSubject: document.getElementById('mainSubject'), description: document.getElementById('description'),
+            actionPose: document.getElementById('actionPose'),
+            locationBackground: document.getElementById('locationBackground'), eraContext: document.getElementById('eraContext'),
+            style: document.getElementById('style'), moodAtmosphere: document.getElementById('moodAtmosphere'),
+            colorTone: document.getElementById('colorTone'), materialTexture: document.getElementById('materialTexture'),
+            artistInspiration: document.getElementById('artistInspiration'), composition: document.getElementById('composition'),
+            lighting: document.getElementById('lighting'), extraEffects: document.getElementById('extraEffects'),
+            resolutionDetail: document.getElementById('resolutionDetail'), aspectRatio: document.getElementById('aspectRatio'),
+            negativePromptCustom: document.getElementById('negativePrompt-custom')
+        };
+        const textOutput = document.getElementById('text-output');
+        const jsonOutput = document.getElementById('json-output');
+        const copyFeedback = document.getElementById('copy-feedback');
+        const presetNameInput = document.getElementById('presetName');
+        const loadPresetSelect = document.getElementById('loadPresetSelect');
+        const importFileInput = document.getElementById('importFile');
+        const PRESET_STORAGE_KEY = 'aiPromptArchitectPresets_v4';
+        let currentLang = 'id';
+
+        // --- Translations & Data ---
+        const commonNegativePrompts = {
+            np_ugly: "ugly, deformed, disfigured",
+            np_blur: "blurry, pixelated, jpeg artifacts",
+            np_anatomy: "bad anatomy, extra limbs, missing limbs",
+            np_hands: "bad hands, poorly drawn hands, extra fingers",
+            np_text: "text, watermark, signature, username",
+            np_duplicate: "duplicate, cloned face, multiple views",
+            np_frame: "frame, border, cropped",
+            np_realism: "unrealistic, cartoon, 2d"
+        };
+
+        const themes = {
+            cyberpunk: {
+                mainSubject: ['a cyborg detective', 'a netrunner in the digital rain', 'a street samurai with neon katanas', 'a renegade android'],
+                locationBackground: ['in a futuristic city', 'in a neon-drenched alleyway', 'inside a high-tech facility'],
+                moodAtmosphere: ['dark and mysterious', 'chaotic and intense', 'futuristic and gritty'],
+                style: ['Cyberpunk', 'Photorealistic', 'Digital Painting'],
+                colorTone: ['Neon Colors', 'Cool Tone', 'High Contrast'],
+                extraEffects: ['Glitch Effect', 'Rain', 'Lens Flare']
+            },
+            fantasy: {
+                mainSubject: ['an elven archer in the woods', 'a wise old wizard in a tower', 'a dwarven blacksmith in a forge', 'a dragon soaring over mountains'],
+                locationBackground: ['in an enchanted forest', 'inside a majestic castle', 'in a forgotten ruin'],
+                moodAtmosphere: ['Epic', 'Magical', 'Mysterious'],
+                style: ['Fantasy Art', 'Oil Painting', 'Digital Painting'],
+                colorTone: ['Vibrant Colors', 'Warm Tone', 'Earthy Tones'],
+                extraEffects: ['Light Rays', 'Fog', 'Sparkles']
+            },
+            serene: {
+                mainSubject: ['a person meditating by a tranquil lake', 'a lone cabin in the snowy mountains', 'a cat sleeping in a sunbeam', 'a zen garden with raked sand'],
+                locationBackground: ['at a serene temple', 'on a peaceful beach at sunset', 'in a cozy library'],
+                moodAtmosphere: ['Calm', 'Peaceful', 'Cozy'],
+                style: ['Watercolor', 'Photorealistic', 'Minimalism'],
+                colorTone: ['Pastel Colors', 'Warm Tone', 'Low Saturation'],
+                extraEffects: ['Bokeh', 'Light Rays']
+            }
+        };
+
+        const translations = {
+            en: {
+                appTitle: "Ultimate AI Image Prompt Generator", appSubtitle: "Create, save, and manage consistent image prompts with ease.",
+                mainInputsTitle: "1. Subject & Scene", stylingOptionsTitle: "2. Style & Visuals", technicalTitle: "3. Technical & Presets",
+                customOption: "Custom...",
+                mainSubjectLabel: "Main Subject", mainSubjectPlaceholder: "e.g., A cybernetic knight",
+                descriptionLabel: "Subject's Detailed Description", descriptionPlaceholder: "Clothing, expression, features...",
+                actionPoseLabel: "Action / Pose", actionPoseOptionDefault: "Select action...", actionPoseOptionStanding: "Standing", actionPoseOptionSitting: "Sitting", actionPoseOptionRunning: "Running", actionPoseOptionFighting: "Fighting Stance", actionPoseOptionLooking: "Looking at viewer",
+                locationBackgroundLabel: "Location / Background", locationBackgroundOptionDefault: "Select location...", locationBackgroundOptionCity: "Futuristic City", locationBackgroundOptionForest: "Enchanted Forest", locationBackgroundOptionSpaceship: "Inside a Spaceship",
+                eraContextLabel: "Era & Cultural Context", eraContextOptionDefault: "Select era...", eraContextOptionPrehistoric: "Prehistoric", eraContextOptionEgypt: "Ancient Egypt", eraContextOptionRoman: "Greek-Roman", eraContextOptionMedieval: "Medieval", eraContextOptionRenaissance: "Renaissance", eraContextOptionVictorian: "Victorian", eraContextOption1920s: "1920s Art Deco", eraContextOption1980s: "1980s Retro", eraContextOptionCyberpunk: "Cyberpunk Future", eraContextOptionApocalyptic: "Post-apocalyptic", eraContextOptionJapanese: "Traditional Japanese",
+                styleLabel: "Visual Style", styleOptionDefault: "Select style...", styleOptionPhotorealistic: "Photorealistic", styleOptionHyperrealistic: "Hyperrealistic", styleOptionSurrealism: "Surrealism", styleOptionCartoon: "Cartoon", styleOptionAnime: "Anime", styleOption3DRender: "3D Render", styleOptionPixar: "Pixar Style", styleOptionPixelArt: "Pixel Art", styleOptionMinimalism: "Minimalism", styleOptionLineArt: "Line Art", styleOptionWatercolor: "Watercolor", styleOptionOilPainting: "Oil Painting", styleOptionDigitalPainting: "Digital Painting", styleOptionCyberpunkStyle: "Cyberpunk", styleOptionFantasyArt: "Fantasy Art",
+                moodAtmosphereLabel: "Mood / Atmosphere", moodAtmosphereOptionDefault: "Select mood...", moodAtmosphereOptionCalm: "Calm", moodAtmosphereOptionEpic: "Epic", moodAtmosphereOptionDramatic: "Dramatic", moodAtmosphereOptionMysterious: "Mysterious", moodAtmosphereOptionHorror: "Horror", moodAtmosphereOptionRomantic: "Romantic", moodAtmosphereOptionJoyful: "Joyful", moodAtmosphereOptionDreamy: "Dreamy", moodAtmosphereOptionMagical: "Magical",
+                colorToneLabel: "Color & Tone", colorToneOptionDefault: "Select color...", colorToneOptionVibrant: "Vibrant Colors", colorToneOptionPastel: "Pastel Colors", colorToneOptionMonochrome: "Monochrome", colorToneOptionBW: "Black & White", colorToneOptionTealOrange: "Cinematic Teal & Orange", colorToneOptionNeon: "Neon Colors", colorToneOptionWarm: "Warm Tone", colorToneOptionCool: "Cool Tone", colorToneOptionHighContrast: "High Contrast",
+                materialTextureLabel: "Material & Texture", materialTextureOptionDefault: "Select material...", materialTextureOptionMetallic: "Metallic", materialTextureOptionGold: "Gold", materialTextureOptionGlass: "Glass", materialTextureOptionCrystal: "Crystal", materialTextureOptionWood: "Wood", materialTextureOptionLeather: "Leather", materialTextureOptionWater: "Water", materialTextureOptionSmoke: "Smoke", materialTextureOptionFire: "Fire",
+                artistLabel: "Artist Inspiration", artistPlaceholder: "e.g., Greg Rutkowski, Artgerm",
+                compositionLabel: "Camera Angle", compositionOptionDefault: "Select angle...", compositionOptionMacro: "Macro", compositionOptionCloseup: "Close-up", compositionOptionMedium: "Medium Shot", compositionOptionWide: "Wide Shot", compositionOptionLow: "Low Angle", compositionOptionHigh: "High Angle", compositionOptionBirdsEye: "Bird’s Eye View", compositionOptionDutch: "Dutch Angle", compositionOptionPortrait: "Portrait", compositionOptionLandscape: "Landscape",
+                lightingLabel: "Lighting", lightingOptionDefault: "Select lighting...", lightingOptionNatural: "Natural Light", lightingOptionGolden: "Golden Hour", lightingOptionBlue: "Blue Hour", lightingOptionNeon: "Neon Lighting", lightingOptionRembrandt: "Rembrandt Lighting", lightingOptionBacklight: "Backlighting", lightingOptionRim: "Rim Lighting", lightingOptionVolumetric: "Volumetric Lighting",
+                extraEffectsLabel: "Extra Effects", extraEffectsOptionDefault: "Select effect...", extraEffectsOptionBokeh: "Bokeh", extraEffectsOptionMotionBlur: "Motion Blur", extraEffectsOptionLensFlare: "Lens Flare", extraEffectsOptionLightRays: "Light Rays", extraEffectsOptionFog: "Fog", extraEffectsOptionRain: "Rain", extraEffectsOptionSparkles: "Sparkles", extraEffectsOptionGlitch: "Glitch Effect", extraEffectsOptionFilmGrain: "Film Grain",
+                resolutionDetailLabel: "Resolution & Detail", resolutionDetailOptionDefault: "Select resolution...", resolutionDetailOption4K: "4K, highly detailed", resolutionDetailOption8K: "8K, hyperrealistic", resolutionDetailOptionMasterpiece: "Masterpiece, best quality", resolutionDetailOptionArtstation: "Trending on ArtStation",
+                aspectRatioLabel: "Aspect Ratio",
+                negativePromptLabel: "Negative Prompt", negativePromptPlaceholder: "Add custom negatives...",
+                presetNameLabel: "Preset Name", presetNamePlaceholder: "e.g., Cyberpunk Knight Style",
+                savePresetButton: "Save", resetButton: "Reset Form", randomizeButton: "Randomize Theme",
+                loadPresetLabel: "Load Preset", loadPresetDefault: "Select a preset...",
+                deletePresetButton: "Delete", importButton: "Import", exportButton: "Export",
+                textOutputTitle: "Text Prompt", jsonOutputTitle: "JSON Output", copyButton: "Copy Text Prompt", copyButtonJSON: "Copy JSON",
+                copiedMessage: "Copied to clipboard!", alertPresetName: "Please enter a name for the preset.", alertNoPresetSelected: "No preset selected to delete.", alertImportSuccess: "Presets imported successfully!", alertImportError: "Failed to import. Invalid file format.",
+                np_ugly: "Ugly/Deformed", np_blur: "Blurry/Pixelated", np_anatomy: "Bad Anatomy", np_hands: "Bad Hands", np_text: "Text/Watermark", np_duplicate: "Duplicates", np_frame: "Frame/Cropped", np_realism: "Unrealistic"
+            },
+            id: {
+                appTitle: "Ultimate AI Image Prompt Generator", appSubtitle: "Buat, simpan, dan kelola prompt gambar yang konsisten dengan mudah.",
+                mainInputsTitle: "1. Subjek & Adegan", stylingOptionsTitle: "2. Gaya & Visual", technicalTitle: "3. Teknis & Preset",
+                customOption: "Kustom...",
+                mainSubjectLabel: "Subjek Utama", mainSubjectPlaceholder: "Contoh: Seorang ksatria cybernetic",
+                descriptionLabel: "Deskripsi Detail Subjek", descriptionPlaceholder: "Pakaian, ekspresi, fitur...",
+                actionPoseLabel: "Aksi / Pose", actionPoseOptionDefault: "Pilih aksi...", actionPoseOptionStanding: "Berdiri", actionPoseOptionSitting: "Duduk", actionPoseOptionRunning: "Berlari", actionPoseOptionFighting: "Pose Bertarung", actionPoseOptionLooking: "Melihat ke penonton",
+                locationBackgroundLabel: "Lokasi / Latar", locationBackgroundOptionDefault: "Pilih lokasi...", locationBackgroundOptionCity: "Kota Futuristik", locationBackgroundOptionForest: "Hutan Ajaib", locationBackgroundOptionSpaceship: "Dalam Pesawat Luar Angkasa",
+                eraContextLabel: "Era & Konteks Budaya", eraContextOptionDefault: "Pilih era...", eraContextOptionPrehistoric: "Prasejarah", eraContextOptionEgypt: "Mesir Kuno", eraContextOptionRoman: "Yunani-Romawi", eraContextOptionMedieval: "Abad Pertengahan", eraContextOptionRenaissance: "Renaissance", eraContextOptionVictorian: "Victoria", eraContextOption1920s: "1920-an Art Deco", eraContextOption1980s: "1980-an Retro", eraContextOptionCyberpunk: "Masa Depan Cyberpunk", eraContextOptionApocalyptic: "Pasca-kiamat", eraContextOptionJapanese: "Jepang Tradisional",
+                styleLabel: "Gaya Visual", styleOptionDefault: "Pilih gaya...", styleOptionPhotorealistic: "Fotorealistis", styleOptionHyperrealistic: "Hyperrealistic", styleOptionSurrealism: "Surealisme", styleOptionCartoon: "Kartun", styleOptionAnime: "Anime", styleOption3DRender: "3D Render", styleOptionPixar: "Gaya Pixar", styleOptionPixelArt: "Pixel Art", styleOptionMinimalism: "Minimalisme", styleOptionLineArt: "Line Art", styleOptionWatercolor: "Cat Air", styleOptionOilPainting: "Lukisan Cat Minyak", styleOptionDigitalPainting: "Lukisan Digital", styleOptionCyberpunkStyle: "Cyberpunk", styleOptionFantasyArt: "Seni Fantasi",
+                moodAtmosphereLabel: "Mood / Atmosfer", moodAtmosphereOptionDefault: "Pilih mood...", moodAtmosphereOptionCalm: "Tenang", moodAtmosphereOptionEpic: "Epik", moodAtmosphereOptionDramatic: "Dramatis", moodAtmosphereOptionMysterious: "Misterius", moodAtmosphereOptionHorror: "Horor", moodAtmosphereOptionRomantic: "Romantis", moodAtmosphereOptionJoyful: "Ceria", moodAtmosphereOptionDreamy: "Seperti Mimpi", moodAtmosphereOptionMagical: "Magis",
+                colorToneLabel: "Warna & Nada", colorToneOptionDefault: "Pilih warna...", colorToneOptionVibrant: "Warna Cerah", colorToneOptionPastel: "Warna Pastel", colorToneOptionMonochrome: "Monokrom", colorToneOptionBW: "Hitam & Putih", colorToneOptionTealOrange: "Teal & Oranye Sinematik", colorToneOptionNeon: "Warna Neon", colorToneOptionWarm: "Nada Hangat", colorToneOptionCool: "Nada Dingin", colorToneOptionHighContrast: "Kontras Tinggi",
+                materialTextureLabel: "Material & Tekstur", materialTextureOptionDefault: "Pilih material...", materialTextureOptionMetallic: "Logam", materialTextureOptionGold: "Emas", materialTextureOptionGlass: "Kaca", materialTextureOptionCrystal: "Kristal", materialTextureOptionWood: "Kayu", materialTextureOptionLeather: "Kulit", materialTextureOptionWater: "Air", materialTextureOptionSmoke: "Asap", materialTextureOptionFire: "Api",
+                artistLabel: "Inspirasi Seniman", artistPlaceholder: "Contoh: Greg Rutkowski, Artgerm",
+                compositionLabel: "Sudut Kamera", compositionOptionDefault: "Pilih sudut...", compositionOptionMacro: "Makro", compositionOptionCloseup: "Close-up", compositionOptionMedium: "Medium Shot", compositionOptionWide: "Wide Shot", compositionOptionLow: "Sudut Rendah", compositionOptionHigh: "Sudut Tinggi", compositionOptionBirdsEye: "Pandangan Mata Burung", compositionOptionDutch: "Dutch Angle", compositionOptionPortrait: "Potret", compositionOptionLandscape: "Lanskap",
+                lightingLabel: "Pencahayaan", lightingOptionDefault: "Pilih pencahayaan...", lightingOptionNatural: "Cahaya Alami", lightingOptionGolden: "Golden Hour", lightingOptionBlue: "Blue Hour", lightingOptionNeon: "Cahaya Neon", lightingOptionRembrandt: "Pencahayaan Rembrandt", lightingOptionBacklight: "Backlighting", lightingOptionRim: "Rim Lighting", lightingOptionVolumetric: "Pencahayaan Volumetrik",
+                extraEffectsLabel: "Efek Tambahan", extraEffectsOptionDefault: "Pilih efek...", extraEffectsOptionBokeh: "Bokeh", extraEffectsOptionMotionBlur: "Motion Blur", extraEffectsOptionLensFlare: "Lens Flare", extraEffectsOptionLightRays: "Sinar Cahaya", extraEffectsOptionFog: "Kabut", extraEffectsOptionRain: "Hujan", extraEffectsOptionSparkles: "Kilauan", extraEffectsOptionGlitch: "Efek Glitch", extraEffectsOptionFilmGrain: "Film Grain",
+                resolutionDetailLabel: "Resolusi & Detail", resolutionDetailOptionDefault: "Pilih resolusi...", resolutionDetailOption4K: "4K, Sangat Detail", resolutionDetailOption8K: "8K, Hyperrealistic", resolutionDetailOptionMasterpiece: "Masterpiece", resolutionDetailOptionArtstation: "Trending di ArtStation",
+                aspectRatioLabel: "Rasio Aspek",
+                negativePromptLabel: "Prompt Negatif", negativePromptPlaceholder: "Tambahkan negatif prompt kustom...",
+                presetNameLabel: "Nama Preset", presetNamePlaceholder: "Contoh: Gaya Ksatria Cyberpunk",
+                savePresetButton: "Simpan", resetButton: "Reset Form", randomizeButton: "Acak Tema",
+                loadPresetLabel: "Muat Preset", loadPresetDefault: "Pilih preset...",
+                deletePresetButton: "Hapus", importButton: "Import", exportButton: "Export",
+                textOutputTitle: "Text Prompt", jsonOutputTitle: "JSON Output", copyButton: "Salin Teks Prompt", copyButtonJSON: "Salin JSON",
+                copiedMessage: "Berhasil disalin!", alertPresetName: "Harap masukkan nama untuk preset.", alertNoPresetSelected: "Tidak ada preset yang dipilih untuk dihapus.", alertImportSuccess: "Preset berhasil diimpor!", alertImportError: "Gagal mengimpor. Format file tidak valid.",
+                np_ugly: "Jelek/Cacat", np_blur: "Buram/Pecah", np_anatomy: "Anatomi Buruk", np_hands: "Tangan Buruk", np_text: "Teks/Watermark", np_duplicate: "Duplikat", np_frame: "Bingkai/Terpotong", np_realism: "Tidak Realistis"
+            }
+        };
+
+        // --- Core Functions ---
+        function getElementValue(baseId) {
+            const el = document.getElementById(baseId);
+            if (!el) return '';
+            if (el.tagName === 'SELECT' && el.value === 'custom') {
+                const customInput = document.getElementById(`${baseId}-custom`);
+                return customInput ? customInput.value.trim() : '';
+            }
+            return el.value ? el.value.trim() : '';
+        }
+
+        function getNegativePromptValue() {
+            const parts = [];
+            document.querySelectorAll('.negative-prompt-checkbox:checked').forEach(cb => {
+                parts.push(cb.value);
+            });
+            const custom = formElements.negativePromptCustom.value.trim();
+            if (custom) {
+                parts.push(custom);
+            }
+            return parts.join(', ');
+        }
+
+        function generateOutputs() {
+            const promptData = { prompt_details: {}, parameters: {} };
+            const textPromptParts = [];
+            const orderedKeys = [
+                'mainSubject', 'description', 'actionPose', 'locationBackground', 'eraContext', 'moodAtmosphere', 
+                'style', 'colorTone', 'materialTexture', 'artistInspiration', 'composition', 'lighting', 
+                'extraEffects', 'resolutionDetail'
+            ];
+
+            orderedKeys.forEach(id => {
+                const value = getElementValue(id);
+                if (value) {
+                    promptData.prompt_details[id] = value;
+                    textPromptParts.push(value);
+                }
+            });
+
+            promptData.parameters.aspectRatio = formElements.aspectRatio.value;
+            const negativePromptValue = getNegativePromptValue();
+            if(negativePromptValue) {
+                promptData.parameters.negativePrompt = negativePromptValue;
+            }
+
+            let textPrompt = textPromptParts.join(', ');
+            if (promptData.parameters.aspectRatio) textPrompt += ` --ar ${promptData.parameters.aspectRatio}`;
+            if (promptData.parameters.negativePrompt) textPrompt += ` --no ${promptData.parameters.negativePrompt}`;
+            
+            textOutput.value = textPrompt;
+            jsonOutput.textContent = JSON.stringify(promptData, null, 2);
+        }
+
+        // --- Preset Management ---
+        function getPresets() { return JSON.parse(localStorage.getItem(PRESET_STORAGE_KEY) || '{}'); }
+        function savePresets(presets) { localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(presets)); }
+
+        function getFormData() {
+            const data = {};
+            for (const key in formElements) {
+                if (formElements[key]) {
+                    data[key] = formElements[key].value;
+                }
+            }
+            // Also save custom fields and negative checkboxes
+            document.querySelectorAll('.custom-input').forEach(input => data[input.id] = input.value);
+            const negativeCheckboxes = {};
+            document.querySelectorAll('.negative-prompt-checkbox').forEach(cb => negativeCheckboxes[cb.id] = cb.checked);
+            data.negativeCheckboxes = negativeCheckboxes;
+            return data;
+        }
+
+        function setFormData(data) {
+            for (const key in data) {
+                if (formElements[key]) {
+                    formElements[key].value = data[key];
+                    formElements[key].dispatchEvent(new Event('change'));
+                } else if (document.getElementById(key)) {
+                     document.getElementById(key).value = data[key];
+                }
+            }
+             if (data.negativeCheckboxes) {
+                for (const id in data.negativeCheckboxes) {
+                    const cb = document.getElementById(id);
+                    if (cb) cb.checked = data.negativeCheckboxes[id];
+                }
+            }
+            generateOutputs();
+        }
+
+        function populatePresetDropdown() {
+            const presets = getPresets();
+            loadPresetSelect.innerHTML = `<option value="">${translations[currentLang].loadPresetDefault}</option>`;
+            Object.keys(presets).forEach(name => {
+                loadPresetSelect.innerHTML += `<option value="${name}">${name}</option>`;
+            });
+        }
+        
+        // --- Event Handlers ---
+        function saveCurrentPreset() {
+            const name = presetNameInput.value.trim();
+            if (!name) { alert(translations[currentLang].alertPresetName); return; }
+            const presets = getPresets();
+            presets[name] = getFormData();
+            savePresets(presets);
+            populatePresetDropdown();
+            loadPresetSelect.value = name;
+            presetNameInput.value = '';
+        }
+        
+        function deleteSelectedPreset() {
+            const name = loadPresetSelect.value;
+            if (!name) { alert(translations[currentLang].alertNoPresetSelected); return; }
+            const presets = getPresets();
+            delete presets[name];
+            savePresets(presets);
+            populatePresetDropdown();
+        }
+
+        function exportPresets() {
+            const presets = getPresets();
+            const dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(presets, null, 2))}`;
+            const a = document.createElement('a');
+            a.href = dataStr;
+            a.download = "ai_prompt_presets.json";
+            a.click();
+        }
+
+        function importPresets(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const presets = JSON.parse(e.target.result);
+                    if (typeof presets === 'object' && !Array.isArray(presets)) {
+                        savePresets(presets);
+                        populatePresetDropdown();
+                        alert(translations[currentLang].alertImportSuccess);
+                    } else { throw new Error('Invalid format'); }
+                } catch (error) { alert(translations[currentLang].alertImportError); }
+            };
+            reader.readAsText(file);
+        }
+
+        function copyToClipboard(elementId) {
+            const el = document.getElementById(elementId);
+            const text = el.tagName === 'TEXTAREA' ? el.value : el.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                copyFeedback.textContent = translations[currentLang].copiedMessage;
+                copyFeedback.classList.add('show');
+                setTimeout(() => copyFeedback.classList.remove('show'), 2000);
+            });
+        }
+        
+        function switchLanguage(lang) {
+            currentLang = lang;
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`lang-${lang}`).classList.add('active');
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.getAttribute('data-translate');
+                if (translations[lang][key]) {
+                    if (el.placeholder !== undefined) el.placeholder = translations[lang][key];
+                    else if (el.tagName !== 'INPUT') el.textContent = translations[lang][key];
+                }
+            });
+            populatePresetDropdown();
+            populateNegativePrompts();
+        }
+        
+        function resetForm() {
+            document.querySelectorAll('input[type="text"], textarea').forEach(input => input.value = '');
+            document.querySelectorAll('select').forEach(select => select.selectedIndex = 0);
+            document.querySelectorAll('.custom-input').forEach(input => input.style.display = 'none');
+            document.querySelectorAll('.negative-prompt-checkbox').forEach(cb => cb.checked = false);
+            generateOutputs();
+        }
+
+        function populateNegativePrompts() {
+            const container = document.getElementById('negative-prompt-container');
+            container.innerHTML = '';
+            for (const key in commonNegativePrompts) {
+                const label = document.createElement('label');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = key;
+                checkbox.value = commonNegativePrompts[key];
+                checkbox.className = 'negative-prompt-checkbox';
+                
+                label.htmlFor = key;
+                label.appendChild(checkbox);
+                const textNode = document.createElement('span');
+                textNode.setAttribute('data-translate', key);
+                textNode.textContent = translations[currentLang][key] || key.replace('np_', '');
+                label.appendChild(textNode);
+                
+                container.appendChild(label);
+            }
+        }
+
+        function randomizePrompt() {
+            const themeNames = Object.keys(themes);
+            const selectedThemeName = themeNames[Math.floor(Math.random() * themeNames.length)];
+            const theme = themes[selectedThemeName];
+
+            resetForm(); // Start from a clean slate
+
+            formElements.mainSubject.value = theme.mainSubject[Math.floor(Math.random() * theme.mainSubject.length)];
+
+            for (const key in theme) {
+                if (key !== 'mainSubject' && formElements[key]) {
+                    const selectElement = formElements[key];
+                    const randomValue = theme[key][Math.floor(Math.random() * theme[key].length)];
+                    const option = Array.from(selectElement.options).find(opt => opt.value === randomValue);
+                    if (option) {
+                        selectElement.value = randomValue;
+                    }
+                }
+            }
+            generateOutputs();
+        }
+
+        // --- Setup ---
+        function setupEventListeners() {
+            document.body.addEventListener('click', e => {
+                const target = e.target;
+                if (target.closest('[data-output-id]')) copyToClipboard(target.closest('[data-output-id]').dataset.outputId);
+                if (target.matches('#savePresetBtn')) saveCurrentPreset();
+                if (target.matches('#deletePresetBtn')) deleteSelectedPreset();
+                if (target.matches('#importPresetsBtn')) importFileInput.click();
+                if (target.matches('#exportPresetsBtn')) exportPresets();
+                if (target.matches('#resetBtn')) resetForm();
+                if (target.matches('#randomizeBtn')) randomizePrompt();
+                if (target.matches('#lang-id')) switchLanguage('id');
+                if (target.matches('#lang-en')) switchLanguage('en');
+            });
+
+            document.body.addEventListener('change', e => {
+                const target = e.target;
+                if (Object.values(formElements).includes(target) || target.matches('.negative-prompt-checkbox')) generateOutputs();
+                if (target.matches('#loadPresetSelect') && target.value) setFormData(getPresets()[target.value]);
+                if (target.matches('.with-custom')) {
+                    const customInput = document.getElementById(`${target.id}-custom`);
+                    if (customInput) {
+                        customInput.style.display = target.value === 'custom' ? 'block' : 'none';
+                    }
+                }
+                if (target.matches('#importFile')) importPresets(e);
+            });
+
+            document.body.addEventListener('keyup', e => {
+                if (Object.values(formElements).includes(e.target) || e.target.matches('.custom-input')) {
+                    generateOutputs();
+                }
+            });
+        }
+
+        // --- Initialization ---
+        setupEventListeners();
+        switchLanguage('id');
+        generateOutputs();
+    });
+    </script>
+</body>
+</html>
